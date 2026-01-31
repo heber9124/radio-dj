@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Radio DJ Oficial</title>
+<style>
+body{margin:0;background:#050510;font-family:Arial,sans-serif;color:white;overflow-x:hidden}
+.header{display:flex;align-items:center;justify-content:center;gap:20px;font-size:36px;font-weight:bold;color:#00ffff;text-shadow:0 0 15px #00ffff;padding:20px}
+.vinyl{width:70px;height:70px;border-radius:50%;background:radial-gradient(circle,#111 15%,#222 40%,#000 70%);border:4px solid #444;animation:spin 3s linear infinite;position:relative}
+.vinyl::after{content:"";width:10px;height:10px;background:red;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);box-shadow:0 0 15px red,0 0 30px red}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.container{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:25px;padding:25px}
+.card{border-radius:25px;overflow:hidden;cursor:pointer;transition:.3s;position:relative;box-shadow:0 0 20px rgba(0,255,255,.3)}
+.card.active{box-shadow:0 0 40px #00ffff,0 0 90px #00ffff;transform:scale(1.06)}
+.card img{width:100%;height:100%;object-fit:cover}
+.overlay{position:absolute;inset:0;display:flex;align-items:end;justify-content:center;padding:20px;background:linear-gradient(to top,rgba(0,0,0,.9),transparent)}
+.btn{background:#00ffff;border:none;padding:15px 30px;border-radius:40px;font-size:18px;font-weight:bold;box-shadow:0 0 20px #00ffff;cursor:pointer}
+.clock{position:fixed;top:10px;right:15px;text-align:center;color:#00ffff;text-shadow:0 0 10px #00ffff}
+.volume{position:fixed;bottom:20px;right:20px}
+.full{position:fixed;bottom:20px;left:20px;padding:10px 18px;border:none;border-radius:30px;background:#00ffff;font-weight:bold;cursor:pointer;box-shadow:0 0 15px #00ffff}
+.real-eq{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) rotate(180deg);display:flex;gap:4px}
+.real-eq div{width:10px;background:#00ffff;box-shadow:0 0 12px #00ffff;border-radius:3px}
+.eq-panel{position:fixed;top:90px;left:15px;background:rgba(0,0,0,.7);padding:15px;border-radius:15px}
+.eq-panel input{width:120px}
+</style>
+</head>
+<body>
+
+<div class="header"><div class="vinyl"></div>🎧 HEBER DJS EN VIVO</div>
+
+<div class="container">
+<div class="card" onclick="play('cumbia',this)"><img src="foto_colores_mas_reales.png"><div class="overlay"><button class="btn">CUMBIA MIX</button></div></div>
+<div class="card" onclick="play('rock',this)"><img src="ChatGPT Image 28 ene 2026 19_40_16.png"><div class="overlay"><button class="btn">RADIO ROCK</button></div></div>
+<div class="card" onclick="play('electro',this)"><img src="ChatGPT Image 28 ene 2026 19_42_04.png"><div class="overlay"><button class="btn">ELECTRO DANCE</button></div></div>
+</div>
+
+<audio id="player" crossorigin="anonymous"></audio>
+<div class="clock" id="clock"></div>
+
+<div class="volume">🔊 <input type="range" min="0" max="1" step="0.01" value="1" oninput="player.volume=this.value"></div>
+<button class="full" onclick="document.documentElement.requestFullscreen()">⛶ Pantalla completa</button>
+<div class="real-eq" id="eq"></div>
+
+<div class="eq-panel">
+<div>Bajos <input type="range" min="-30" max="30" value="0" oninput="bass.gain.value=this.value"></div>
+<div>Medios <input type="range" min="-30" max="30" value="0" oninput="mid.gain.value=this.value"></div>
+<div>Agudos <input type="range" min="-30" max="30" value="0" oninput="treble.gain.value=this.value"></div>
+</div>
+
+<script>
+const radios={
+cumbia:"https://stream.zeno.fm/furml0lxa4dvv",
+rock:"https://stream.zeno.fm/8zfvwtcay44uv",
+electro:"https://stream.zeno.fm/wrbo5omkljyuv"
+};
+const player=document.getElementById("player");
+
+function play(r,card){
+player.src=radios[r];
+player.play();
+connect();
+document.querySelectorAll('.card').forEach(c=>c.classList.remove('active'));
+card.classList.add('active');
+}
+
+function reloj(){
+const d=new Date();
+clock.innerHTML=d.toLocaleDateString()+"<br>"+d.toLocaleTimeString()+"<br>RADIO DJS";
+}
+setInterval(reloj,1000);reloj();
+
+const eq=document.getElementById("eq");
+for(let i=0;i<40;i++) eq.appendChild(document.createElement("div"));
+
+let ctx,analyser,data,src,bass,mid,treble;
+
+function connect(){
+if(ctx) return;
+ctx=new AudioContext();
+analyser=ctx.createAnalyser();
+analyser.fftSize=128;
+data=new Uint8Array(analyser.frequencyBinCount);
+
+bass=ctx.createBiquadFilter(); bass.type="lowshelf"; bass.frequency.value=200;
+mid=ctx.createBiquadFilter(); mid.type="peaking"; mid.frequency.value=1000;
+treble=ctx.createBiquadFilter(); treble.type="highshelf"; treble.frequency.value=3000;
+
+src=ctx.createMediaElementSource(player);
+src.connect(bass); bass.connect(mid); mid.connect(treble); treble.connect(analyser);
+analyser.connect(ctx.destination);
+
+animate();
+}
+
+function animate(){
+requestAnimationFrame(animate);
+if(!analyser) return;
+analyser.getByteFrequencyData(data);
+const bars=eq.children;
+for(let i=0;i<bars.length;i++){
+bars[i].style.height=(data[i]/1.2+8)+"px";
+}
+}
+</script>
+</body>
+</html>
